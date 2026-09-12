@@ -1,0 +1,119 @@
+openapi: 3.1.0
+info:
+  title: Korean Speaking Study Sync
+  version: 1.0.0
+  description: Sync Korean speaking practice from ChatGPT into the user's study website.
+servers:
+  - url: https://YOUR-VERCEL-DOMAIN.vercel.app
+paths:
+  /api/sync-practice:
+    post:
+      operationId: syncKoreanPractice
+      summary: Sync a completed Korean speaking practice session
+      description: |
+        Use only when the user explicitly asks to sync/save the completed practice to their study website.
+        Save the practice transcript immediately. Learning items are stored as pending review.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [type, date, transcript]
+              properties:
+                type:
+                  type: string
+                  enum: [daily_conversation, interview, expression_training]
+                date:
+                  type: string
+                  description: YYYY-MM-DD
+                duration_minutes:
+                  type: number
+                source_chat_title:
+                  type: string
+                transcript:
+                  oneOf:
+                    - type: string
+                    - type: array
+                      items:
+                        type: object
+                        required: [role, content]
+                        properties:
+                          role:
+                            type: string
+                            enum: [user, assistant]
+                          content:
+                            type: string
+                summary:
+                  type: string
+                question_id:
+                  type: string
+                  nullable: true
+                question:
+                  type: string
+                  nullable: true
+                performance:
+                  type: object
+                  properties:
+                    rating:
+                      type: integer
+                      minimum: 1
+                      maximum: 4
+                    framework:
+                      type: string
+                    fluency:
+                      type: string
+                errors:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      original: { type: string }
+                      better: { type: string }
+                      type: { type: string }
+                      reason: { type: string }
+                grammar:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      pattern: { type: string }
+                      meaning: { type: string }
+                      example: { type: string }
+                expressions:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      text: { type: string }
+                      meaning: { type: string }
+                      example: { type: string }
+                corpus:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      text: { type: string }
+                      meaning: { type: string }
+                      category: { type: string }
+                notes:
+                  type: string
+      responses:
+        "200":
+          description: Successfully synced and queued for review
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean }
+                  session_id: { type: string }
+                  pending_import_id: { type: string }
+                  status: { type: string }
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
