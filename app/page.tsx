@@ -161,7 +161,7 @@ export default function Home(){
           .select('id')
           .eq('user_id', user.id)
           .eq('term', x.term)
-          .single();
+          .maybeSingle();
 
         if (duplicateError) throw duplicateError;
         vid = duplicated.id;
