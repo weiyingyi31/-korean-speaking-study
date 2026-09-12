@@ -178,7 +178,8 @@ export default function Home(){
       .select('id')
       .eq('vocabulary_id', vid)
       .eq('korean', x.example)
-      .maybeSingle();
+      .limit(1)
+.maybeSingle();
 
     if (exampleFindError) throw exampleFindError;
 
