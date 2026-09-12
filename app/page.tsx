@@ -126,21 +126,79 @@ export default function Home(){
     setBusy(true);
     try{
       const seed=await fetch('/api/seed').then(r=>r.json());
-      for(const x of seed.vocabulary||[]){
-        const {data:existing}=await supabase.from('vocabulary').select('id').eq('user_id',user.id).eq('term',x.term).maybeSingle();
-        let vid=existing?.id;
-        if(!vid){
-          const {data:created,error}=await supabase.from('vocabulary').insert({
-            user_id:user.id,term:x.term,zh:x.zh,category:x.category,source:'韩语每日学习材料.pdf',
-            learned_at:x.date||null,mastery:x.mastery||'learning'
-          }).select('id').single();
-          if(error)throw error;vid=created.id;
-        }
-        if(x.example){
-          const {data:oldEx}=await supabase.from('vocabulary_examples').select('id').eq('vocabulary_id',vid).eq('korean',x.example).maybeSingle();
-          if(!oldEx)await supabase.from('vocabulary_examples').insert({vocabulary_id:vid,korean:x.example,chinese:x.exampleZh||'',source:'韩语每日学习材料.pdf'});
-        }
+      for (const x of seed.vocabulary || []) {
+  const { data: existing, error: findError } = await supabase
+    .from('vocabulary')
+    .select('id')
+    .eq('user_id', user.id)
+    .eq('term', x.term)
+    .maybeSingle();
+
+  if (findError) throw findError;
+
+  let vid = existing?.id;
+
+  if (!vid) {
+    const { data: created, error: insertError } = await supabase
+      .from('vocabulary')
+      .insert({
+        user_id: user.id,
+        term: x.term,
+        zh: x.zh,
+        category: x.category,
+        source: '韩语每日学习材料.pdf',
+        learned_at: x.date || null,
+        mastery: x.mastery || 'learning'
+      })
+      .select('id')
+      .single();
+
+    if (insertError) {
+      // 如果其实已经存在，就重新读取，不让整个导入失败
+      if (insertError.code === '23505') {
+        const { data: duplicated, error: duplicateError } = await supabase
+          .from('vocabulary')
+          .select('id')
+          .eq('user_id', user.id)
+          .eq('term', x.term)
+          .single();
+
+        if (duplicateError) throw duplicateError;
+        vid = duplicated.id;
+      } else {
+        throw insertError;
       }
+    } else {
+      vid = created.id;
+    }
+  }
+
+  if (x.example && vid) {
+    const { data: oldEx, error: exampleFindError } = await supabase
+      .from('vocabulary_examples')
+      .select('id')
+      .eq('vocabulary_id', vid)
+      .eq('korean', x.example)
+      .maybeSingle();
+
+    if (exampleFindError) throw exampleFindError;
+
+    if (!oldEx) {
+      const { error: exampleInsertError } = await supabase
+        .from('vocabulary_examples')
+        .insert({
+          vocabulary_id: vid,
+          korean: x.example,
+          chinese: x.exampleZh || '',
+          source: '韩语每日学习材料.pdf'
+        });
+
+      if (exampleInsertError && exampleInsertError.code !== '23505') {
+        throw exampleInsertError;
+      }
+    }
+  }
+}
       for(const x of seed.corpus||[])await supabase.from('corpus').upsert({
         user_id:user.id,korean:x.text,chinese:x.zh,category:x.category,status:x.status||'passive',source:'文本.txt / 口语复盘'
       },{onConflict:'user_id,korean'});
