@@ -139,42 +139,38 @@ export default function Home(){
   let vid = existing?.id;
 
   if (!vid) {
-    const { data: created, error: insertError } = await supabase
-      .from('vocabulary')
-      .insert({
-        user_id: user.id,
-        term: x.term,
-        zh: x.zh,
-        category: x.category,
-        source: '韩语每日学习材料.pdf',
-        learned_at: x.date || null,
-        mastery: x.mastery || 'learning'
-      })
-      .select('id')
-      .single();
+  const { error: insertError } = await supabase
+    .from('vocabulary')
+    .insert({
+      user_id: user.id,
+      term: x.term,
+      zh: x.zh,
+      category: x.category,
+      source: '韩语每日学习材料.pdf',
+      learned_at: x.date || null,
+      mastery: x.mastery || 'learning'
+    });
 
-    if (insertError) {
-      // 如果其实已经存在，就重新读取，不让整个导入失败
-      if (insertError.code === '23505') {
-        const { data: duplicated, error: duplicateError } = await supabase
-          .from('vocabulary')
-          .select('id')
-          .eq('user_id', user.id)
-          .eq('term', x.term)
-          .maybeSingle();
-
-        if (duplicateError) throw duplicateError;
-        if (!duplicated) {
-  throw new Error(`Duplicate vocabulary found but could not be loaded: ${x.term}`);
-}
-vid = duplicated.id;
-      } else {
-        throw insertError;
-      }
-    } else {
-      vid = created.id;
-    }
+  // 23505 = 已经存在，直接继续读取原来的记录
+  if (insertError && insertError.code !== '23505') {
+    throw insertError;
   }
+
+  const { data: saved, error: savedError } = await supabase
+    .from('vocabulary')
+    .select('id')
+    .eq('user_id', user.id)
+    .eq('term', x.term)
+    .maybeSingle();
+
+  if (savedError) throw savedError;
+
+  if (!saved) {
+    throw new Error(`Vocabulary could not be loaded after insert: ${x.term}`);
+  }
+
+  vid = saved.id;
+}
 
   if (x.example && vid) {
     const { data: oldEx, error: exampleFindError } = await supabase
