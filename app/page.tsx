@@ -27,6 +27,7 @@ export default function Home(){
   const [view,setView]=useState('today');
   const [user,setUser]=useState<any>(null);
   const [email,setEmail]=useState('');
+  const [password,setPassword]=useState('');
   const [authMsg,setAuthMsg]=useState('');
   const [mode,setMode]=useState<Mode>('daily');
 
@@ -77,11 +78,31 @@ export default function Home(){
   useEffect(()=>{if(user)loadAll()},[user]);
 
   async function signIn(){
-    if(!supabase||!email.trim())return;
-    setAuthMsg('发送中…');
-    const {error}=await supabase.auth.signInWithOtp({email:email.trim(),options:{emailRedirectTo:window.location.origin}});
-    setAuthMsg(error?error.message:'登录链接已发送到邮箱。');
-  }
+  if(!supabase||!email.trim()||!password)return;
+  setAuthMsg('登录中…');
+
+  const {error}=await supabase.auth.signInWithPassword({
+    email:email.trim(),
+    password
+  });
+
+  setAuthMsg(error ? error.message : '');
+}
+  async function signUp(){
+  if(!supabase||!email.trim()||!password)return;
+  setAuthMsg('注册中…');
+
+  const {error}=await supabase.auth.signUp({
+    email:email.trim(),
+    password
+  });
+
+  setAuthMsg(
+    error
+      ? error.message
+      : '注册成功，请直接登录。'
+  );
+}
   async function signOut(){if(supabase)await supabase.auth.signOut();setUser(null);}
 
   async function loadAll(){
@@ -481,7 +502,30 @@ export default function Home(){
 
   if(!supabase)return <main className="wrap"><div className="panel"><h1>需要配置 Supabase</h1><p className="muted">请先配置 NEXT_PUBLIC_SUPABASE_URL 和 NEXT_PUBLIC_SUPABASE_ANON_KEY。</p></div></main>;
 
-  if(!user)return <main className="wrap"><div className="hero"><h1>오늘의 한국어</h1><p className="muted">登录后，手机和电脑会同步同一套学习数据。</p><input className="search" value={email} onChange={e=>setEmail(e.target.value)} placeholder="你的邮箱"/><button className="btn primary" onClick={signIn}>发送登录链接</button><p className="small muted">{authMsg}</p></div></main>;
+  if(!user)return <main className="wrap"><div className="hero"><h1>오늘의 한국어</h1><p className="muted">登录后，手机和电脑会同步同一套学习数据。</p><input
+  className="search"
+  value={email}
+  onChange={e=>setEmail(e.target.value)}
+  placeholder="邮箱"
+/>
+
+<input
+  className="search"
+  type="password"
+  value={password}
+  onChange={e=>setPassword(e.target.value)}
+  placeholder="密码"
+/>
+
+<div className="tabs">
+  <button className="btn primary" onClick={signIn}>
+    登录
+  </button>
+
+  <button className="btn" onClick={signUp}>
+    第一次使用，注册
+  </button>
+</div><p className="small muted">{authMsg}</p></div></main>;
 
   return <main className="wrap">
     {view==='today'&&<>
