@@ -164,7 +164,10 @@ export default function Home(){
           .maybeSingle();
 
         if (duplicateError) throw duplicateError;
-        vid = duplicated.id;
+        if (!duplicated) {
+  throw new Error(`Duplicate vocabulary found but could not be loaded: ${x.term}`);
+}
+vid = duplicated.id;
       } else {
         throw insertError;
       }
