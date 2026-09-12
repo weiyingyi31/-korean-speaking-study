@@ -186,12 +186,12 @@ export default function Home(){
   async function nextMockQuestion(){
     const n=mockIndex+1;
     if(n>=mockQuestions.length){
-      if(mockRunId)await supabase.from('mock_interviews').update({completed:true,ended_at:new Date().toISOString(),current_index:mockIndex}).eq('id',mockRunId);
+      if(mockRunId && supabase)await supabase.from('mock_interviews').update({completed:true,ended_at:new Date().toISOString(),current_index:mockIndex}).eq('id',mockRunId);
       await analyze(messages);
       return;
     }
     setMockIndex(n);
-    if(mockRunId)await supabase.from('mock_interviews').update({current_index:n}).eq('id',mockRunId);
+    if(mockRunId && supabase)await supabase.from('mock_interviews').update({current_index:n}).eq('id',mockRunId);
     const q=mockQuestions[n];
     const msg={role:'assistant' as const,content:q.korean};
     setMessages(prev=>[...prev,msg]);
