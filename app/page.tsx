@@ -70,6 +70,13 @@ export default function Home(){
   const [showAnswer,setShowAnswer]=useState(false);
   const [reviewQueue,setReviewQueue]=useState<any[]>([]);
   const [reviewIndex,setReviewIndex]=useState(0);
+  const [showAddCorpus,setShowAddCorpus]=useState(false);
+
+const [newCorpus,setNewCorpus]=useState({
+  category: 'daily',
+  chinese: '',
+  korean: ''
+});
 
   // V1.8
   const [weeklyCorpus,setWeeklyCorpus]=useState<any[]>([]);
@@ -187,6 +194,42 @@ async function saveFramework() {
 
   setShowAddQuestion(false);
   alert('面试题已加入题库');
+}
+  async function saveNewCorpus() {
+  if (!supabase || !user) return;
+
+  if (!newCorpus.korean.trim()) {
+    alert('请填写韩语语料');
+    return;
+  }
+
+  const { data, error } = await supabase
+    .from('corpus')
+    .insert({
+      user_id: user.id,
+      korean: newCorpus.korean.trim(),
+      chinese: newCorpus.chinese.trim() || null,
+      category: newCorpus.category,
+      status: 'learning'
+    })
+    .select()
+    .single();
+
+  if (error) {
+    alert('语料保存失败：' + error.message);
+    return;
+  }
+
+  setCorpus(prev => [...prev, data]);
+
+  setNewCorpus({
+    category: 'daily',
+    chinese: '',
+    korean: ''
+  });
+
+  setShowAddCorpus(false);
+  alert('语料已加入资料库');
 }
   async function signIn(){
   if(!supabase||!email.trim()||!password)return;
@@ -1200,6 +1243,81 @@ for(const id of tasks.vocabulary||[]){
 
     {view==='library'&&<>
       <button className="btn" onClick={()=>setView('today')}>← 返回</button><h1 style={{marginTop:14}}>📖 我的资料库</h1>
+      <div style={{marginBottom:14}}>
+  <button
+    className="btn primary"
+    type="button"
+    onClick={()=>setShowAddCorpus(!showAddCorpus)}
+  >
+    {showAddCorpus ? '收起新增语料' : '＋ 添加语料'}
+  </button>
+</div>
+
+{showAddCorpus && (
+  <div className="panel" style={{marginBottom:16}}>
+    <h2>新增语料</h2>
+
+    <div className="muted" style={{marginBottom:6}}>
+      分类
+    </div>
+
+    <select
+      className="search"
+      value={newCorpus.category}
+      onChange={e=>
+        setNewCorpus({
+          ...newCorpus,
+          category:e.target.value
+        })
+      }
+    >
+      <option value="daily">日常积累</option>
+      <option value="interview">面试题目语料</option>
+    </select>
+
+    <div className="muted" style={{marginTop:12,marginBottom:6}}>
+      中文
+    </div>
+
+    <input
+      className="search"
+      value={newCorpus.chinese}
+      placeholder="输入中文"
+      onChange={e=>
+        setNewCorpus({
+          ...newCorpus,
+          chinese:e.target.value
+        })
+      }
+    />
+
+    <div className="muted" style={{marginTop:12,marginBottom:6}}>
+      韩语
+    </div>
+
+    <input
+      className="search"
+      value={newCorpus.korean}
+      placeholder="输入韩语语料"
+      onChange={e=>
+        setNewCorpus({
+          ...newCorpus,
+          korean:e.target.value
+        })
+      }
+    />
+
+    <div style={{marginTop:16}}>
+      <button
+        className="btn primary"
+        type="button"
+        onClick={saveNewCorpus}
+      >
+        保存到语料库
+      </button>
+    </div>
+  </div>
+)}
       <input className="search" value={librarySearch} onChange={e=>setLibrarySearch(e.target.value)} placeholder="搜索：판본 / 연구 방법 / ~을 바탕으로 ..." />
       <div className="tabs">
         {[['all','全部'],['vocab','专业词汇'],['corpus','语料'],['errors','错误'],['grammar','语法'],['questions','面试题']].map(([k,label]:any)=>
