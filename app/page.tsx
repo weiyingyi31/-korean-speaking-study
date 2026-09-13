@@ -678,14 +678,32 @@ async function saveFramework() {
   const currentStudy=studyList[studyIndex]||null;
 
   function buildReview(){
-    if(!tasks)return[];
-    const list:any[]=[];
-    for(const id of tasks.errors||[]){const x=errors.find(a=>a.id===id);if(x)list.push({kind:'error',x})}
-    for(const id of tasks.corpus||[]){const x=corpus.find(a=>a.id===id);if(x)list.push({kind:'corpus',x})}
-    for(const id of tasks.questionsReview||[]){const x=questions.find(a=>a.id===id);if(x)list.push({kind:'question',x})}
-    for(const id of tasks.translation||[]){const x=vocab.find(a=>a.id===id);if(x)list.push({kind:'vocab',x})}
-    return list;
+  if(!tasks)return[];
+
+  const list:any[]=[];
+
+  for(const id of tasks.errors||[]){
+    const x=errors.find(a=>a.id===id);
+    if(x)list.push({kind:'error',x});
   }
+
+  for(const id of tasks.corpus||[]){
+    const x=corpus.find(a=>a.id===id);
+    if(x)list.push({kind:'corpus',x});
+  }
+
+  for(const id of tasks.questionsReview||[]){
+    const x=questions.find(a=>a.id===id);
+    if(x)list.push({kind:'question',x});
+  }
+
+  for(const id of tasks.translation||[]){
+    const x=vocab.find(a=>a.id===id);
+    if(x)list.push({kind:'translation',x});
+  }
+
+  return list;
+}
   useEffect(()=>{setReviewQueue(buildReview());setReviewIndex(0)},[tasks,errors,corpus,questions,vocab]);
 
 
@@ -1208,13 +1226,139 @@ function AnalysisPanel({data,toggleKeep,save,busy}:{data:Analysis,toggleKeep:any
 }
 
 function ReviewPanel({queue,index,setIndex,rate}:{queue:any[],index:number,setIndex:any,rate:any}){
-  const item=queue[index];
-  if(!item)return <div><h1>🧠 今日复习</h1><div className="panel"><h2>今日复习完成</h2></div></div>;
-  const x=item.x;let prompt='',answer='';
-  if(item.kind==='error'){prompt=`把这个表达改得更自然：${x.original}`;answer=x.better}
-  if(item.kind==='corpus'){prompt=`请用韩语表达：${x.chinese||x.korean}`;answer=x.korean}
-  if(item.kind==='question'){prompt=x.korean;answer=(x.framework||[]).join(' → ')}
-  if(item.kind==='vocab'){prompt=`解释或造句：${x.term}`;answer=x.vocabulary_examples?.[0]?.korean||x.zh}
-  const table=item.kind==='question'?'questions':item.kind==='vocab'?'vocabulary':item.kind==='corpus'?'corpus':null;
-  return <div><h1>🧠 今日复习</h1><div className="panel"><div className="small muted">{index+1} / {queue.length}</div><h2 style={{lineHeight:1.6}}>{prompt}</h2><details><summary>查看参考</summary><div className="panel">{answer}</div></details><div className="tabs">{[['😵 不会',1],['😐 困难',2],['🙂 掌握',3],['😎 熟练',4]].map(([label,score]:any)=><button className="btn" key={score} onClick={async()=>{if(table)await rate(table,x.id,score);setIndex((i:number)=>i+1)}}>{label}</button>)}</div></div></div>
+  const [category,setCategory]=useState('all');
+  const filteredQueue =
+  category === 'all'
+    ? queue
+    : queue.filter(item => item.kind === category);
+  useEffect(()=>{
+  setIndex(0);
+},[category]);
+  const item=filteredQueue[index];
+ 
+
+  if(!item){
+  return (
+    <div>
+      <h1>🧠 今日复习</h1>
+
+      <div className="tabs" style={{marginBottom:16}}>
+        {[
+          ['all','全部'],
+          ['vocab','专业词汇'],
+          ['translation','中译韩'],
+          ['error','错误表达'],
+          ['corpus','个人语料'],
+          ['question','面试题']
+        ].map(([key,label])=>(
+          <button
+            key={key}
+            className={`btn ${category===key?'primary':''}`}
+            onClick={()=>setCategory(key)}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      <div className="panel">
+        <h2>这个分类今天没有需要复习的内容</h2>
+      </div>
+    </div>
+  );
+}
+
+const x=item.x;
+let prompt='',answer='';
+
+if(item.kind==='error'){
+  prompt=`把这个表达改得更自然：${x.original}`;
+  answer=x.better;
+}
+
+if(item.kind==='corpus'){
+  prompt=`请用韩语表达：${x.chinese||x.korean}`;
+  answer=x.korean;
+}
+
+if(item.kind==='question'){
+  prompt=x.korean;
+  answer=(x.framework||[]).join(' → ');
+}
+
+if(item.kind==='vocab'){
+  prompt=`解释或造句：${x.term}`;
+  answer=x.vocabulary_examples?.[0]?.korean||x.zh;
+}
+
+if(item.kind==='translation'){
+  prompt=`请翻译成韩语：${x.zh||x.term}`;
+  answer=x.term;
+}
+
+const table=
+  item.kind==='question'?'questions':
+  item.kind==='vocab'?'vocabulary':
+  item.kind==='translation'?'vocabulary':
+  item.kind==='corpus'?'corpus':
+  null;
+  return (
+  <div>
+    <h1>🧠 今日复习</h1>
+
+    <div className="tabs" style={{marginBottom:16}}>
+      {[
+        ['all','全部'],
+        ['vocab','专业词汇'],
+        ['translation','中译韩'],
+        ['error','错误表达'],
+        ['corpus','个人语料'],
+        ['question','面试题']
+      ].map(([key,label])=>(
+        <button
+          key={key}
+          className={`btn ${category===key?'primary':''}`}
+          onClick={()=>setCategory(key)}
+        >
+          {label}
+        </button>
+      ))}
+    </div>
+
+    <div className="panel">
+      <div className="small muted">
+        {index+1} / {filteredQueue.length}
+      </div>
+
+      <h2 style={{lineHeight:1.6}}>
+        {prompt}
+      </h2>
+
+      <details>
+        <summary>查看参考</summary>
+        <div className="panel">{answer}</div>
+      </details>
+
+      <div className="tabs">
+        {[
+          ['😵 不会',1],
+          ['😐 困难',2],
+          ['🙂 掌握',3],
+          ['😎 熟练',4]
+        ].map(([label,score]:any)=>(
+          <button
+            className="btn"
+            key={score}
+            onClick={async()=>{
+              if(table)await rate(table,x.id,score);
+              setIndex((i:number)=>i+1);
+            }}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+    </div>
+  </div>
+);
 }
