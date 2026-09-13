@@ -678,9 +678,27 @@ export default function Home(){
         <div className="card"><h2>🧪 正式模拟</h2><div className="muted">随机抽6题，逐题回答，中途不显示框架、不纠错。</div><button className="btn primary" onClick={startMock}>开始模拟</button></div>
       </div>
       <div className="panel"><h2>当前面试题</h2>
-        <select className="search" value={selectedQuestion?.id||''} onChange={e=>setSelectedQuestion(questions.find(q=>q.id===e.target.value))}>
-          {questions.map(q=><option key={q.id} value={q.id}>{q.day_tag||''} · {q.topic}</option>)}
-        </select>
+        <select
+  className="search"
+  value={selectedQuestion?.id || ''}
+  onChange={e =>
+    setSelectedQuestion(
+      questions.find(q => q.id === e.target.value)
+    )
+  }
+>
+  {['日常/个人问题', '专业问题'].map(category => (
+    <optgroup key={category} label={category}>
+      {questions
+        .filter(q => q.major_category === category)
+        .map(q => (
+          <option key={q.id} value={q.id}>
+            {q.day_tag || ''} · {q.topic}
+          </option>
+        ))}
+    </optgroup>
+  ))}
+</select>
         <p style={{lineHeight:1.6}}>{selectedQuestion?.korean||'请先导入题库'}</p>
         {(selectedQuestion?.framework||[]).map((f:string)=><span className="pill" key={f}>{f}</span>)}
       </div>
