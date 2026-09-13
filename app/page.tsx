@@ -54,6 +54,16 @@ export default function Home(){
   const [tasks,setTasks]=useState<any>(null);
   const [selectedQuestion,setSelectedQuestion]=useState<any>(null);
   const [frameworkDraft,setFrameworkDraft]=useState<string[]>([]);
+  const [showAddQuestion,setShowAddQuestion]=useState(false);
+
+  const [newQuestion,setNewQuestion]=useState({
+  major_category: '',
+  topic: '',
+  day_tag: '',
+  korean: '',
+  Chinese: '',
+  framework: [] as string[]
+});
 
   const [studyIndex,setStudyIndex]=useState(0);
   const [studyMode,setStudyMode]=useState<'vocab'|'translate'>('vocab');
@@ -119,6 +129,64 @@ async function saveFramework() {
   );
 
   alert('回答框架已保存');
+}
+  async function saveNewQuestion() {
+  if (!supabase || !user) return;
+
+  if (!newQuestion.major_category.trim()) {
+    alert('请选择或填写大分类');
+    return;
+  }
+
+  if (!newQuestion.topic.trim()) {
+    alert('请选择或填写主题分类');
+    return;
+  }
+
+  if (!newQuestion.korean.trim()) {
+    alert('请填写韩语题目');
+    return;
+  }
+
+  const cleanedFramework = newQuestion.framework
+    .map(item => item.trim())
+    .filter(Boolean);
+
+  const { data, error } = await supabase
+    .from('questions')
+    .insert({
+      user_id: user.id,
+      major_category: newQuestion.major_category.trim(),
+      topic: newQuestion.topic.trim(),
+      day_tag: newQuestion.day_tag.trim() || null,
+      korean: newQuestion.korean.trim(),
+      Chinese: newQuestion.Chinese.trim() || null,
+      framework: cleanedFramework,
+      mastery: 'learning',
+      source: '网站新增'
+    })
+    .select()
+    .single();
+
+  if (error) {
+    alert('面试题保存失败：' + error.message);
+    return;
+  }
+
+  setQuestions(prev => [...prev, data]);
+  setSelectedQuestion(data);
+
+  setNewQuestion({
+    major_category: '',
+    topic: '',
+    day_tag: '',
+    korean: '',
+    Chinese: '',
+    framework: []
+  });
+
+  setShowAddQuestion(false);
+  alert('面试题已加入题库');
 }
   async function signIn(){
   if(!supabase||!email.trim()||!password)return;
@@ -720,6 +788,193 @@ async function saveFramework() {
         <div className="card"><h2>🎓 单题面试</h2><div className="muted">回答中不打断，不即时纠错。</div><div className="tabs"><button className="btn" onClick={()=>startTextChat('interview')}>文字</button><button className="btn primary" onClick={()=>startVoice('interview')}>网站语音（备用）</button></div></div>
         <div className="card"><h2>🧪 正式模拟</h2><div className="muted">随机抽6题，逐题回答，中途不显示框架、不纠错。</div><button className="btn primary" onClick={startMock}>开始模拟</button></div>
       </div>
+      <div style={{ marginBottom: 14 }}>
+  <button
+    className="btn primary"
+    type="button"
+    onClick={() => setShowAddQuestion(!showAddQuestion)}
+  >
+    {showAddQuestion ? '收起新增题目' : '＋ 添加面试题'}
+  </button>
+</div>
+
+{showAddQuestion && (
+  <div className="panel" style={{ marginBottom: 16 }}>
+    <h2>新增面试题</h2>
+
+    <div className="muted" style={{ marginBottom: 6 }}>大分类</div>
+    <input
+      className="search"
+      list="major-category-list"
+      value={newQuestion.major_category}
+      placeholder="例如：专业问题"
+      onChange={e =>
+        setNewQuestion({
+          ...newQuestion,
+          major_category: e.target.value
+        })
+      }
+    />
+    <datalist id="major-category-list">
+      {Array.from(
+        new Set(
+          questions
+            .map(q => q.major_category)
+            .filter(Boolean)
+        )
+      ).map(category => (
+        <option key={category} value={category} />
+      ))}
+    </datalist>
+
+    <div className="muted" style={{ marginTop: 12, marginBottom: 6 }}>
+      主题分类
+    </div>
+    <input
+      className="search"
+      list="topic-list"
+      value={newQuestion.topic}
+      placeholder="例如：研究对象"
+      onChange={e =>
+        setNewQuestion({
+          ...newQuestion,
+          topic: e.target.value
+        })
+      }
+    />
+    <datalist id="topic-list">
+      {Array.from(
+        new Set(
+          questions
+            .filter(
+              q =>
+                !newQuestion.major_category ||
+                q.major_category === newQuestion.major_category
+            )
+            .map(q => q.topic)
+            .filter(Boolean)
+        )
+      ).map(topic => (
+        <option key={topic} value={topic} />
+      ))}
+    </datalist>
+
+    <div className="muted" style={{ marginTop: 12, marginBottom: 6 }}>
+      DAY
+    </div>
+    <input
+      className="search"
+      value={newQuestion.day_tag}
+      placeholder="例如：DAY17"
+      onChange={e =>
+        setNewQuestion({
+          ...newQuestion,
+          day_tag: e.target.value
+        })
+      }
+    />
+
+    <div className="muted" style={{ marginTop: 12, marginBottom: 6 }}>
+      韩语题目
+    </div>
+    <input
+      className="search"
+      value={newQuestion.korean}
+      placeholder="输入韩语题目"
+      onChange={e =>
+        setNewQuestion({
+          ...newQuestion,
+          korean: e.target.value
+        })
+      }
+    />
+
+    <div className="muted" style={{ marginTop: 12, marginBottom: 6 }}>
+      中文题目
+    </div>
+    <input
+      className="search"
+      value={newQuestion.Chinese}
+      placeholder="输入中文题目"
+      onChange={e =>
+        setNewQuestion({
+          ...newQuestion,
+          Chinese: e.target.value
+        })
+      }
+    />
+
+    <div style={{ marginTop: 16 }}>
+      <div style={{ fontWeight: 600, marginBottom: 10 }}>
+        回答框架
+      </div>
+
+      {newQuestion.framework.map((item, index) => (
+        <div
+          key={index}
+          style={{
+            display: 'flex',
+            gap: 8,
+            marginBottom: 8
+          }}
+        >
+          <input
+            className="search"
+            value={item}
+            placeholder={`框架要点 ${index + 1}`}
+            onChange={e => {
+              const next = [...newQuestion.framework];
+              next[index] = e.target.value;
+
+              setNewQuestion({
+                ...newQuestion,
+                framework: next
+              });
+            }}
+          />
+
+          <button
+            className="btn"
+            type="button"
+            onClick={() =>
+              setNewQuestion({
+                ...newQuestion,
+                framework: newQuestion.framework.filter(
+                  (_, i) => i !== index
+                )
+              })
+            }
+          >
+            删除
+          </button>
+        </div>
+      ))}
+
+      <button
+        className="btn"
+        type="button"
+        onClick={() =>
+          setNewQuestion({
+            ...newQuestion,
+            framework: [...newQuestion.framework, '']
+          })
+        }
+      >
+        ＋ 添加框架要点
+      </button>
+    </div>
+
+    <div style={{ marginTop: 16 }}>
+      <button
+        className="btn primary"
+        type="button"
+        onClick={saveNewQuestion}
+      >
+        保存到题库
+      </button>
+    </div>
+  </div>
+)}
      <div className="panel">
   <h2>当前面试题</h2>
 
