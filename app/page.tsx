@@ -61,7 +61,7 @@ export default function Home(){
   topic: '',
   day_tag: '',
   korean: '',
-  Chinese: '',
+  chinese: '',
   framework: [] as string[]
 });
 
@@ -160,7 +160,7 @@ async function saveFramework() {
       topic: newQuestion.topic.trim(),
       day_tag: newQuestion.day_tag.trim() || null,
       korean: newQuestion.korean.trim(),
-      Chinese: newQuestion.Chinese.trim() || null,
+      chinese: newQuestion.chinese.trim() || null,
       framework: cleanedFramework,
       mastery: 'learning',
       source: '网站新增'
@@ -181,7 +181,7 @@ async function saveFramework() {
     topic: '',
     day_tag: '',
     korean: '',
-    Chinese: '',
+    chinese: '',
     framework: []
   });
 
@@ -894,12 +894,12 @@ async function saveFramework() {
     </div>
     <input
       className="search"
-      value={newQuestion.Chinese}
+      value={newQuestion.chinese}
       placeholder="输入中文题目"
       onChange={e =>
         setNewQuestion({
           ...newQuestion,
-          Chinese: e.target.value
+          chinese: e.target.value
         })
       }
     />
