@@ -370,7 +370,7 @@ async function saveFramework() {
       vocabulary:v.filter((x:any)=>x.mastery!=='mastered').slice(0,10).map((x:any)=>x.id),
       translation:v.filter(due).slice(0,15).map((x:any)=>x.id),
       questionsNew:q.filter((x:any)=>!x.last_review).slice(0,2).map((x:any)=>x.id),
-      questionsReview:q.filter((x:any)=>x.last_review&&due(x)).slice(0,6).map((x:any)=>x.id),
+      questionsReview:q.filter((x:any)=>due(x)).slice(0,6).map((x:any)=>x.id),
       errors:e.filter(due).slice(0,8).map((x:any)=>x.id),
       corpus:c.filter((x:any)=>x.status!=='active'&&due(x)).slice(0,8).map((x:any)=>x.id)
     };
@@ -696,7 +696,12 @@ async function saveFramework() {
     const x=questions.find(a=>a.id===id);
     if(x)list.push({kind:'question',x});
   }
-
+    
+for(const id of tasks.vocabulary||[]){
+  const x=vocab.find(a=>a.id===id);
+  if(x)list.push({kind:'vocab',x});
+}
+    
   for(const id of tasks.translation||[]){
     const x=vocab.find(a=>a.id===id);
     if(x)list.push({kind:'translation',x});
