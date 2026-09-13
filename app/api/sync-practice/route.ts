@@ -25,6 +25,7 @@ function normalizeMessages(transcript: unknown) {
 }
 
 export async function POST(req: Request) {
+  try {
   if (!authorized(req)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
@@ -116,10 +117,21 @@ export async function POST(req: Request) {
     }).eq('id', body.question_id).eq('user_id', userId);
   }
 
-  return NextResponse.json({
+   return NextResponse.json({
     ok: true,
     session_id: session.id,
     pending_import_id: pending.id,
     status: 'pending_review'
   });
+
+  } catch (error:any) {
+    console.error('sync-practice error:', error);
+
+    return NextResponse.json(
+      {
+        error: error?.message || String(error)
+      },
+      { status: 500 }
+    );
+  }
 }
