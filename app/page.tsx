@@ -53,6 +53,7 @@ export default function Home(){
   const [questions,setQuestions]=useState<any[]>([]);
   const [tasks,setTasks]=useState<any>(null);
   const [selectedQuestion,setSelectedQuestion]=useState<any>(null);
+  const [frameworkDraft,setFrameworkDraft]=useState<string[]>([]);
 
   const [studyIndex,setStudyIndex]=useState(0);
   const [studyMode,setStudyMode]=useState<'vocab'|'translate'>('vocab');
@@ -76,7 +77,49 @@ export default function Home(){
     return ()=>subscription.unsubscribe();
   },[]);
   useEffect(()=>{if(user)loadAll()},[user]);
+  useEffect(() => {
+  if (selectedQuestion) {
+    setFrameworkDraft(
+      Array.isArray(selectedQuestion.framework)
+        ? selectedQuestion.framework
+        : []
+    );
+  } else {
+    setFrameworkDraft([]);
+  }
+}, [selectedQuestion]);
+async function saveFramework() {
+  if (!supabase || !selectedQuestion) return;
 
+  const cleanedFramework = frameworkDraft
+    .map(item => item.trim())
+    .filter(Boolean);
+
+  const { error } = await supabase
+    .from('questions')
+    .update({ framework: cleanedFramework })
+    .eq('id', selectedQuestion.id);
+
+  if (error) {
+    alert('回答框架保存失败：' + error.message);
+    return;
+  }
+
+  setSelectedQuestion({
+    ...selectedQuestion,
+    framework: cleanedFramework
+  });
+
+  setQuestions(prev =>
+    prev.map(q =>
+      q.id === selectedQuestion.id
+        ? { ...q, framework: cleanedFramework }
+        : q
+    )
+  );
+
+  alert('回答框架已保存');
+}
   async function signIn(){
   if(!supabase||!email.trim()||!password)return;
   setAuthMsg('登录中…');
@@ -765,11 +808,72 @@ export default function Home(){
     {selectedQuestion?.korean || '请先导入题库'}
   </p>
 
-  {(selectedQuestion?.framework || []).map((f: string) => (
-    <span className="pill" key={f}>
-      {f}
-    </span>
+  <div style={{ marginTop: 18 }}>
+  <div style={{ fontWeight: 600, marginBottom: 10 }}>
+    回答框架
+  </div>
+
+  {frameworkDraft.map((item, index) => (
+    <div
+      key={index}
+      style={{
+        display: 'flex',
+        gap: 8,
+        marginBottom: 8
+      }}
+    >
+      <input
+        className="search"
+        value={item}
+        placeholder={`框架要点 ${index + 1}`}
+        onChange={e => {
+          const next = [...frameworkDraft];
+          next[index] = e.target.value;
+          setFrameworkDraft(next);
+        }}
+      />
+
+      <button
+        className="btn"
+        type="button"
+        onClick={() =>
+          setFrameworkDraft(
+            frameworkDraft.filter((_, i) => i !== index)
+          )
+        }
+      >
+        删除
+      </button>
+    </div>
   ))}
+
+  <div
+    style={{
+      display: 'flex',
+      gap: 8,
+      marginTop: 10
+    }}
+  >
+    <button
+      className="btn"
+      type="button"
+      onClick={() =>
+        setFrameworkDraft([...frameworkDraft, ''])
+      }
+    >
+      ＋ 添加一条
+    </button>
+
+    <button
+      className="btn primary"
+      type="button"
+      onClick={saveFramework}
+      disabled={!selectedQuestion}
+    >
+      保存框架
+    </button>
+  </div>
+</div>
 </div>
     </>}
 
