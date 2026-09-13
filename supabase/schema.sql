@@ -53,6 +53,7 @@ create table if not exists errors (
   error_type text,
   reason text,
   occurrence_count int default 1,
+  source text,
   last_seen date default current_date,
   next_review date,
   created_at timestamptz default now()
