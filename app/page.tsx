@@ -677,31 +677,100 @@ export default function Home(){
         <div className="card"><h2>🎓 单题面试</h2><div className="muted">回答中不打断，不即时纠错。</div><div className="tabs"><button className="btn" onClick={()=>startTextChat('interview')}>文字</button><button className="btn primary" onClick={()=>startVoice('interview')}>网站语音（备用）</button></div></div>
         <div className="card"><h2>🧪 正式模拟</h2><div className="muted">随机抽6题，逐题回答，中途不显示框架、不纠错。</div><button className="btn primary" onClick={startMock}>开始模拟</button></div>
       </div>
-      <div className="panel"><h2>当前面试题</h2>
-        <select
-  className="search"
-  value={selectedQuestion?.id || ''}
-  onChange={e =>
-    setSelectedQuestion(
-      questions.find(q => q.id === e.target.value)
-    )
-  }
->
-  {['日常/个人问题', '专业问题'].map(category => (
-    <optgroup key={category} label={category}>
-      {questions
-        .filter(q => q.major_category === category)
-        .map(q => (
-          <option key={q.id} value={q.id}>
-            {q.day_tag || ''} · {q.topic}
-          </option>
-        ))}
-    </optgroup>
+     <div className="panel">
+  <h2>当前面试题</h2>
+
+  <div className="muted" style={{ marginBottom: 6 }}>大分类</div>
+  <select
+    className="search"
+    value={selectedQuestion?.major_category || ''}
+    onChange={e => {
+      const firstQuestion = questions.find(
+        q => q.major_category === e.target.value
+      );
+      if (firstQuestion) setSelectedQuestion(firstQuestion);
+    }}
+  >
+    {Array.from(
+      new Set(
+        questions
+          .map(q => q.major_category)
+          .filter(Boolean)
+      )
+    ).map(category => (
+      <option key={category} value={category}>
+        {category}
+      </option>
+    ))}
+  </select>
+
+  <div className="muted" style={{ marginTop: 12, marginBottom: 6 }}>
+    主题分类
+  </div>
+  <select
+    className="search"
+    value={selectedQuestion?.topic || ''}
+    onChange={e => {
+      const firstQuestion = questions.find(
+        q =>
+          q.major_category === selectedQuestion?.major_category &&
+          q.topic === e.target.value
+      );
+      if (firstQuestion) setSelectedQuestion(firstQuestion);
+    }}
+  >
+    {Array.from(
+      new Set(
+        questions
+          .filter(
+            q =>
+              q.major_category === selectedQuestion?.major_category
+          )
+          .map(q => q.topic)
+          .filter(Boolean)
+      )
+    ).map(topic => (
+      <option key={topic} value={topic}>
+        {topic}
+      </option>
+    ))}
+  </select>
+
+  <div className="muted" style={{ marginTop: 12, marginBottom: 6 }}>
+    具体问题
+  </div>
+  <select
+    className="search"
+    value={selectedQuestion?.id || ''}
+    onChange={e =>
+      setSelectedQuestion(
+        questions.find(q => q.id === e.target.value)
+      )
+    }
+  >
+    {questions
+      .filter(
+        q =>
+          q.major_category === selectedQuestion?.major_category &&
+          q.topic === selectedQuestion?.topic
+      )
+      .map(q => (
+        <option key={q.id} value={q.id}>
+          {q.day_tag || ''} · {q.korean}
+        </option>
+      ))}
+  </select>
+
+  <p style={{ lineHeight: 1.6 }}>
+    {selectedQuestion?.korean || '请先导入题库'}
+  </p>
+
+  {(selectedQuestion?.framework || []).map((f: string) => (
+    <span className="pill" key={f}>
+      {f}
+    </span>
   ))}
-</select>
-        <p style={{lineHeight:1.6}}>{selectedQuestion?.korean||'请先导入题库'}</p>
-        {(selectedQuestion?.framework||[]).map((f:string)=><span className="pill" key={f}>{f}</span>)}
-      </div>
+</div>
     </>}
 
 
