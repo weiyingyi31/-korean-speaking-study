@@ -648,8 +648,25 @@ async function saveFramework() {
         else await supabase.from('errors').insert({user_id:user.id,original:x.original,better:x.better,error_type:x.type,reason:x.reason,next_review:addDays(1),source:'AI口语复盘'});
       }
       for(const x of analysis.grammar||[])if(x.keep)await supabase.from('grammar').upsert({user_id:user.id,pattern:x.pattern,meaning:x.meaning,example:x.example,source:'AI口语复盘',next_review:addDays(2)},{onConflict:'user_id,pattern'});
-      for(const x of analysis.corpus||[])if(x.keep)await supabase.from('corpus').upsert({user_id:user.id,korean:x.text,chinese:x.meaning,category:x.category,status:'semi',source:'AI口语复盘',next_review:addDays(2)},{onConflict:'user_id,korean'});
-      for(const x of analysis.expressions||[])if(x.keep)await supabase.from('corpus').upsert({user_id:user.id,korean:x.text,chinese:x.meaning,category:'日常表达',status:'semi',source:'AI口语复盘',next_review:addDays(2)},{onConflict:'user_id,korean'});
+     for(const x of analysis.corpus||[])if(x.keep)await supabase.from('corpus').upsert({
+  user_id:user.id,
+  korean:x.text,
+  chinese:x.meaning,
+  category:x.category==='interview'?'interview':'daily',
+  status:'semi',
+  source:'AI口语复盘',
+  next_review:addDays(2)
+},{onConflict:'user_id,korean'});
+
+for(const x of analysis.expressions||[])if(x.keep)await supabase.from('corpus').upsert({
+  user_id:user.id,
+  korean:x.text,
+  chinese:x.meaning,
+  category:'daily',
+  status:'semi',
+  source:'AI口语复盘',
+  next_review:addDays(2)
+},{onConflict:'user_id,korean'});
       if(sessionId)await supabase.from('practice_analysis').update({approved:true}).eq('session_id',sessionId);
       await loadAll();alert('已保存到云端学习资料库。');
     }finally{setBusy(false)}
@@ -696,7 +713,7 @@ async function saveFramework() {
       const korean=x.text||x.korean;if(!korean)continue;
       await supabase.from('corpus').upsert({
         user_id:user.id,korean,chinese:x.meaning||x.chinese||'',
-        category:x.category||'ChatGPT同步',status:'semi',
+        category:x.category==='interview'?'interview':'daily',status:'semi',
         source:'ChatGPT同步',next_review:item.practiced_at
       },{onConflict:'user_id,korean'});
     }
@@ -763,7 +780,20 @@ for(const id of tasks.vocabulary||[]){
       }
     };
     vocab.forEach(x=>add('vocab',x.id,x.term,x.zh+' · '+x.category,x.term+x.zh+x.category+(x.vocabulary_examples?.[0]?.korean||''),x));
-    corpus.forEach(x=>add('corpus',x.id,x.korean,x.chinese+' · '+x.status,x.korean+x.chinese+x.category+x.status,x));
+    corpus.forEach(x=>add(
+  'corpus',
+  x.id,
+  x.korean,
+  (x.chinese||'')+' · '+(
+    x.category==='interview'
+      ? '面试题目语料'
+      : x.category==='daily'
+        ? '日常积累'
+        : '未分类'
+  ),
+  (x.korean||'')+(x.chinese||'')+(x.category||'')+(x.status||''),
+  x
+));
     errors.forEach(x=>add('errors',x.id,x.better,'易错：'+x.original,x.original+x.better+x.error_type+x.reason,x));
     grammar.forEach(x=>add('grammar',x.id,x.pattern,x.meaning,x.pattern+x.meaning+x.example,x));
     questions.forEach(x=>add('questions',x.id,x.korean,x.topic+' · '+x.day_tag,x.korean+x.chinese+x.topic+x.sample_answer,x));
