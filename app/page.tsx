@@ -202,11 +202,46 @@ export default function Home(){
       for(const x of seed.corpus||[])await supabase.from('corpus').upsert({
         user_id:user.id,korean:x.text,chinese:x.zh,category:x.category,status:x.status||'passive',source:'文本.txt / 口语复盘'
       },{onConflict:'user_id,korean'});
-      for(const x of seed.errors||[]){
-        const {data:old}=await supabase.from('errors').select('*').eq('user_id',user.id).eq('original',x.wrong).eq('better',x.correct).maybeSingle();
-        if(old)await supabase.from('errors').update({occurrence_count:Math.max(old.occurrence_count||1,x.count||1)}).eq('id',old.id);
-        else await supabase.from('errors').insert({user_id:user.id,original:x.wrong,better:x.correct,error_type:x.type,reason:x.note,occurrence_count:Math.max(1,x.count||1),source:'韩语口语练习总结.pdf'});
-      }
+      for (const x of seed.errors || []) {
+  const { data: old, error: findError } = await supabase
+    .from('errors')
+    .select('id, occurrence_count')
+    .eq('user_id', user.id)
+    .eq('original', x.wrong)
+    .eq('better', x.correct)
+    .limit(1)
+    .maybeSingle();
+
+  if (findError) throw findError;
+
+  if (old) {
+    const { error: updateError } = await supabase
+      .from('errors')
+      .update({
+        occurrence_count: Math.max(
+          old.occurrence_count || 1,
+          x.count || 1
+        )
+      })
+      .eq('id', old.id);
+
+    if (updateError) throw updateError;
+  } else {
+    const { error: insertError } = await supabase
+      .from('errors')
+      .insert({
+        user_id: user.id,
+        original: x.wrong,
+        better: x.correct,
+        error_type: x.type,
+        reason: x.note,
+        occurrence_count: Math.max(1, x.count || 1),
+        source: '韩语口语练习总结.pdf'
+      });
+
+    if (insertError) throw insertError;
+  }
+}
       for(const x of seed.questions||[])await supabase.from('questions').upsert({
         user_id:user.id,topic:x.topic,day_tag:x.day,korean:x.question,chinese:x.zh,
         framework:x.framework||[],sample_answer:x.answer||'',mastery:x.mastery||'learning',
