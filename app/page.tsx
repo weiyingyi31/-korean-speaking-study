@@ -475,11 +475,29 @@ async function saveFramework() {
       await supabase.from('vocabulary').update({term,zh,category}).eq('id',item.id);
     }
     if(kind==='corpus'){
-      const korean=prompt('韩语语料',item.korean); if(korean===null)return;
-      const chinese=prompt('中文',item.chinese||''); if(chinese===null)return;
-      const category=prompt('分类',item.category||''); if(category===null)return;
-      await supabase.from('corpus').update({korean,chinese,category}).eq('id',item.id);
-    }
+  const korean=prompt('韩语语料',item.korean); if(korean===null)return;
+  const chinese=prompt('中文',item.chinese||''); if(chinese===null)return;
+
+  const categoryInput=prompt(
+    '请选择分类：\n1 = 日常积累\n2 = 面试题目语料',
+    item.category==='interview'?'2':'1'
+  );
+
+  if(categoryInput===null)return;
+
+  const category=
+    categoryInput==='2'
+      ? 'interview'
+      : 'daily';
+
+  await supabase.from('corpus').update({
+    korean,
+    chinese,
+    category
+  }).eq('id',item.id);
+
+  await loadAll();
+}
     if(kind==='errors'){
       const original=prompt('原表达',item.original); if(original===null)return;
       const better=prompt('推荐表达',item.better); if(better===null)return;
