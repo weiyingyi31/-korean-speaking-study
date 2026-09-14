@@ -56,8 +56,9 @@ export async function POST(req: Request) {
     .single();
 
   if (sessionError) {
-    return NextResponse.json({ error: sessionError.message }, { status: 500 });
-  }
+  console.error('practice_sessions error:', sessionError);
+  return NextResponse.json({ error: sessionError.message }, { status: 500 });
+}
 
   if (messages.length) {
     const rows = messages.map((m:any)=>({
@@ -67,8 +68,9 @@ export async function POST(req: Request) {
     }));
     const { error } = await supabase.from('practice_messages').insert(rows);
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
-    }
+  console.error('practice_messages error:', error);
+  return NextResponse.json({ error: error.message }, { status: 500 });
+}
   }
 
   const payload = {
@@ -99,8 +101,9 @@ export async function POST(req: Request) {
     .single();
 
   if (pendingError) {
-    return NextResponse.json({ error: pendingError.message }, { status: 500 });
-  }
+  console.error('pending_imports error:', pendingError);
+  return NextResponse.json({ error: pendingError.message }, { status: 500 });
+}
 
   // Safe automatic update for a linked interview question:
   // only scheduling metadata is updated; AI-generated learning content still waits for approval.
