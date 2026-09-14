@@ -78,6 +78,14 @@ const [newCorpus,setNewCorpus]=useState({
   korean: ''
 });
 
+  const [showAddGrammar,setShowAddGrammar]=useState(false);
+
+const [newGrammar,setNewGrammar]=useState({
+  pattern: '',
+  meaning: '',
+  example: ''
+});
+  
   // V1.8
   const [weeklyCorpus,setWeeklyCorpus]=useState<any[]>([]);
   const [pendingImports,setPendingImports]=useState<any[]>([]);
@@ -194,6 +202,43 @@ async function saveFramework() {
 
   setShowAddQuestion(false);
   alert('面试题已加入题库');
+}
+  async function saveNewGrammar() {
+  if (!supabase || !user) return;
+
+  if (!newGrammar.pattern.trim()) {
+    alert('请填写语法');
+    return;
+  }
+
+  const { data, error } = await supabase
+    .from('grammar')
+    .insert({
+      user_id: user.id,
+      pattern: newGrammar.pattern.trim(),
+      meaning: newGrammar.meaning.trim() || null,
+      example: newGrammar.example.trim() || null,
+      status: 'learning',
+      source: '手动添加'
+    })
+    .select()
+    .single();
+
+  if (error) {
+    alert('语法保存失败：' + error.message);
+    return;
+  }
+
+  setGrammar(prev => [...prev, data]);
+
+  setNewGrammar({
+    pattern: '',
+    meaning: '',
+    example: ''
+  });
+
+  setShowAddGrammar(false);
+  alert('语法已加入资料库');
 }
   async function saveNewCorpus() {
   if (!supabase || !user) return;
@@ -1373,6 +1418,70 @@ for(const id of tasks.vocabulary||[]){
     </div>
   </div>
 )}
+            <div style={{marginBottom:14}}>
+        <button
+          className="btn primary"
+          type="button"
+          onClick={()=>setShowAddGrammar(!showAddGrammar)}
+        >
+          {showAddGrammar ? '收起新增语法' : '＋ 添加语法'}
+        </button>
+      </div>
+
+      {showAddGrammar && (
+        <div className="panel" style={{marginBottom:16}}>
+          <h2>新增语法</h2>
+
+          <div className="muted" style={{marginBottom:6}}>
+            语法
+          </div>
+          <input
+            className="search"
+            value={newGrammar.pattern}
+            onChange={e=>setNewGrammar({
+              ...newGrammar,
+              pattern:e.target.value
+            })}
+            placeholder="例如：-는 데"
+          />
+
+          <div className="muted" style={{marginTop:12,marginBottom:6}}>
+            中文释义 / 用法
+          </div>
+          <input
+            className="search"
+            value={newGrammar.meaning}
+            onChange={e=>setNewGrammar({
+              ...newGrammar,
+              meaning:e.target.value
+            })}
+            placeholder="例如：表示背景、情况或对比"
+          />
+
+          <div className="muted" style={{marginTop:12,marginBottom:6}}>
+            韩语例句
+          </div>
+          <input
+            className="search"
+            value={newGrammar.example}
+            onChange={e=>setNewGrammar({
+              ...newGrammar,
+              example:e.target.value
+            })}
+            placeholder="输入韩语例句"
+          />
+
+          <div style={{marginTop:16}}>
+            <button
+              className="btn primary"
+              type="button"
+              onClick={saveNewGrammar}
+            >
+              保存到语法库
+            </button>
+          </div>
+        </div>
+      )}
       <input className="search" value={librarySearch} onChange={e=>setLibrarySearch(e.target.value)} placeholder="搜索：판본 / 연구 방법 / ~을 바탕으로 ..." />
       <div className="tabs">
         {[['all','全部'],['vocab','专业词汇'],['corpus','语料'],['errors','错误'],['grammar','语法'],['questions','面试题']].map(([k,label]:any)=>
