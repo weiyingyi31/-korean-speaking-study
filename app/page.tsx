@@ -468,18 +468,61 @@ async function saveFramework() {
 
 
   async function generateWeeklyCorpus(){
-    if(!supabase||!user)return;
-    const week=weekStart();
-    const existing=await supabase.from('weekly_corpus').select('id').eq('user_id',user.id).eq('week_start',week);
-    if((existing.data||[]).length){await loadAll();return;}
-    const candidates=[...corpus].filter((x:any)=>x.status!=='active').slice(0,20);
-    for(let i=0;i<candidates.length;i++){
-      await supabase.from('weekly_corpus').insert({
-        user_id:user.id,week_start:week,corpus_id:candidates[i].id,priority:20-i
-      });
-    }
-    await loadAll();
+  if(!supabase||!user)return;
+
+  const week=weekStart();
+
+  const { data:existing, error:existingError } = await supabase
+    .from('weekly_corpus')
+    .select('corpus_id')
+    .eq('user_id',user.id)
+    .eq('week_start',week);
+
+  if(existingError){
+    alert('读取本周目标语料失败：'+existingError.message);
+    return;
   }
+
+  const existingIds=new Set((existing||[]).map((x:any)=>x.corpus_id));
+  const need=Math.max(0,20-existingIds.size);
+
+  if(need===0){
+    await loadAll();
+    return;
+  }
+
+  const candidates=[...corpus]
+    .filter((x:any)=>!existingIds.has(x.id))
+    .sort((a:any,b:any)=>{
+      const aPriority=a.status==='active'?1:0;
+      const bPriority=b.status==='active'?1:0;
+      return aPriority-bPriority;
+    })
+    .slice(0,need);
+
+  if(!candidates.length){
+    alert('目前没有可加入本周目标的语料');
+    return;
+  }
+
+  for(let i=0;i<candidates.length;i++){
+    const { error } = await supabase
+      .from('weekly_corpus')
+      .insert({
+        user_id:user.id,
+        week_start:week,
+        corpus_id:candidates[i].id,
+        priority:20-(existingIds.size+i)
+      });
+
+    if(error){
+      alert('生成本周目标语料失败：'+error.message);
+      return;
+    }
+  }
+
+  await loadAll();
+}
 
   async function startMock(){
     if(!supabase||!user||questions.length===0)return;
