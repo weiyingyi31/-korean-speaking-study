@@ -797,7 +797,14 @@ for(const id of tasks.vocabulary||[]){
         out.push({kind,id,title,sub,item});
       }
     };
-    vocab.forEach(x=>add('vocab',x.id,x.term,x.zh+' · '+x.category,x.term+x.zh+x.category+(x.vocabulary_examples?.[0]?.korean||''),x));
+    vocab.forEach(x=>add(
+  'vocab',
+  x.id,
+  x.term || '',
+  (x.zh || '') + (x.category ? ' · ' + x.category : ''),
+  (x.term || '') + (x.zh || '') + (x.category || '') + (x.vocabulary_examples?.[0]?.korean || ''),
+  x
+));
     corpus.forEach(x=>add(
   'corpus',
   x.id,
